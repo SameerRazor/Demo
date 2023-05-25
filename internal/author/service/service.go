@@ -6,12 +6,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"Demo/internal/models"
+	"Demo/internal/author/models"
 )
 
 func CreateAuthor(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var author models.Author
+		var author authorModels.Author
 		err := c.ShouldBindJSON(&author)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
@@ -31,7 +31,7 @@ func CreateAuthor(db *gorm.DB) gin.HandlerFunc {
 func GetAuthor(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		var authors []models.Author
+		var authors []authorModels.Author
 		result := db.Find(&authors)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})
@@ -49,7 +49,7 @@ func UpdateAuthor(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var author models.Author
+		var author authorModels.Author
 		result := db.First(&author, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})
@@ -79,7 +79,7 @@ func GetAuthorParams(db *gorm.DB, params string) gin.HandlerFunc {
 
 			param := c.Param(params)
 
-			var authors []models.Author
+			var authors []authorModels.Author
 			result := db.Find(&authors, param)
 			if result.Error != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})
@@ -89,7 +89,7 @@ func GetAuthorParams(db *gorm.DB, params string) gin.HandlerFunc {
 			return
 		}
 
-		var authors []models.Author
+		var authors []authorModels.Author
 		result := db.First(&authors, param)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})
@@ -107,7 +107,7 @@ func DeleteAuthor(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var author models.Author
+		var author authorModels.Author
 		result := db.First(&author, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})

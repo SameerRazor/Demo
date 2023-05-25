@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"Demo/internal/models"
+	"Demo/internal/book/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -13,7 +13,7 @@ import (
 func GetBooks(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		var books []models.Book
+		var books []bookModels.Book
 		result := db.Find(&books)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Books not found"})
@@ -30,7 +30,7 @@ func GetBookParams(db *gorm.DB, params string) gin.HandlerFunc {
 
 			param := c.Param(params)
 
-			var books []models.Book
+			var books []bookModels.Book
 			result := db.Find(&books, param)
 			if result.Error != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "book not found"})
@@ -40,7 +40,7 @@ func GetBookParams(db *gorm.DB, params string) gin.HandlerFunc {
 			return
 		}
 
-		var books []models.Book
+		var books []bookModels.Book
 		result := db.First(&books, param)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
@@ -52,7 +52,7 @@ func GetBookParams(db *gorm.DB, params string) gin.HandlerFunc {
 
 func CreateBooks(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var book models.Book
+		var book bookModels.Book
 		err := c.ShouldBindJSON(&book)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
@@ -77,7 +77,7 @@ func UpdateBooks(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var book models.Book
+		var book bookModels.Book
 		result := db.First(&book, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
@@ -108,7 +108,7 @@ func DeleteBook(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var book models.Book
+		var book bookModels.Book
 		result := db.First(&book, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})

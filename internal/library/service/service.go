@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"Demo/internal/models"
+	"Demo/internal/library/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -12,7 +12,7 @@ import (
 
 func CreateLibrary(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var library models.Library
+		var library libraryModels.Library
 		err := c.ShouldBindJSON(&library)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
@@ -36,7 +36,7 @@ func GetLibrary(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var position []models.Library
+		var position []libraryModels.Library
 		result := db.First(&position, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
@@ -54,7 +54,7 @@ func DeleteLibrary(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var book models.Library
+		var book libraryModels.Library
 		result := db.First(&book, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
