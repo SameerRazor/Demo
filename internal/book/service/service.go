@@ -3,10 +3,12 @@ package bookService
 import (
 	"net/http"
 	"strconv"
+	"time"
 
-	"Demo/internal/author/models"
-	"Demo/internal/genre/models"
-	"Demo/internal/book/models"
+	author "Demo/internal/author/models"
+	book "Demo/internal/book/models"
+	genre "Demo/internal/genre/models"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -74,6 +76,13 @@ func CreateBooks(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		book.AuthorId = author.ID
+
+		epoc, _ := strconv.Atoi(c.Param(book.PublicationDate))
+		epochTime := epoc
+		t := time.Unix(int64(epochTime), 0)
+
+		formattedDate := t.Format("2006-01-02")
+		book.PublicationDate = formattedDate
 
 		var genre genre.Genre
 		result = db.Table("genres").

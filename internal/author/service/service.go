@@ -2,9 +2,10 @@ package authorService
 
 import (
 	author "Demo/internal/author/models"
-	"Demo/internal/book/models"
+	book "Demo/internal/book/models"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -18,6 +19,13 @@ func CreateAuthor(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 			return
 		}
+
+		epoc, _ := strconv.Atoi(c.Param(author.DateOfBirth))
+		epochTime := epoc
+		t := time.Unix(int64(epochTime), 0)
+
+		formattedDate := t.Format("2006-01-02")
+		author.DateOfBirth = formattedDate
 
 		result := db.Create(&author)
 		if result.Error != nil {
@@ -39,6 +47,24 @@ func GetAuthor(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, authors)
+	}
+}
+
+func GetAuthorById(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Author ID"})
+			return
+		}
+
+		var genre []author.Author
+		result := db.First(&genre, id)
+		if result.Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})
+			return
+		}
+		c.JSON(http.StatusOK, genre)
 	}
 }
 

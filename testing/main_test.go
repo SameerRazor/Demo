@@ -37,7 +37,7 @@ func TestCreateBooks(t *testing.T) {
 		AuthorId: 1,
 		GenreName: "Romance",
 		GenreId: 1,
-		PublicationDate: 20082002,
+		PublicationDate: "2054634354",
 	}
 
 	requestBody := gin.H{
