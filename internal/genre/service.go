@@ -1,10 +1,8 @@
-package service
+package genre
 
 import (
 	"net/http"
 	"strconv"
-
-	"Demo/internal/genre/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -18,7 +16,7 @@ func GetGenreById(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var genre []genreModels.Genre
+		var genre []Genre
 		result := db.First(&genre, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Genre not found"})
@@ -28,9 +26,10 @@ func GetGenreById(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+
 func CreateGenre(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var genre genreModels.Genre
+		var genre Genre
 		err := c.ShouldBindJSON(&genre)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
@@ -55,7 +54,7 @@ func UpdateGenre(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var genre genreModels.Genre
+		var genre Genre
 		result := db.First(&genre, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Genre not found"})
@@ -86,7 +85,7 @@ func DeleteGenre(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var genre genreModels.Genre
+		var genre Genre
 		result := db.First(&genre, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Genre not found"})

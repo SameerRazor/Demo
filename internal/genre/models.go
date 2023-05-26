@@ -1,4 +1,4 @@
-package genreModels
+package genre
 
 type Genre struct {
 	ID        int       `gorm:"primaryKey;autoIncrement" json:"id"`

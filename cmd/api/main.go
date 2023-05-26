@@ -2,16 +2,12 @@ package main
 
 import (
 	"log"
-
 	"Demo/config"
-	"Demo/internal/book/models"
-	"Demo/internal/author/models"
-	"Demo/internal/genre/models"
-	"Demo/internal/library/models"
-	"Demo/internal/book/router"
-	"Demo/internal/author/router"
-	"Demo/internal/genre/router"
-	"Demo/internal/library/router"
+	"Demo/router"
+	"Demo/internal/book"
+	"Demo/internal/author"
+	"Demo/internal/genre"
+	"Demo/internal/library"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,30 +16,27 @@ func main() {
 
 	r := gin.Default()
 
-	err := db.AutoMigrate(&bookModels.Book{})
+	err := db.AutoMigrate(&book.Book{})
 	if err != nil {
 		log.Fatalf("Failed to migrate the database schema: %v", err)
 		return
 	}
-	err = db.AutoMigrate(&authorModels.Author{})
+	err = db.AutoMigrate(&author.Author{})
 	if err != nil {
 		log.Fatalf("Failed to migrate the database schema: %v", err)
 		return
 	}
-	err = db.AutoMigrate(&genreModels.Genre{})
+	err = db.AutoMigrate(&genre.Genre{})
 	if err != nil {
 		log.Fatalf("Failed to migrate the database schema: %v", err)
 	}
 
-	err = db.AutoMigrate(&libraryModels.Library{})
+	err = db.AutoMigrate(&library.Library{})
 	if err != nil {
 		log.Fatalf("Failed to migrate the database schema: %v", err)
 	}
 
-	authorRouter.SetupRouter(r, db)
-	bookRouter.SetupRouter(r, db)
-	genreRouter.SetupRouter(r, db)
-	libraryRouter.SetupRouter(r, db)
+	router.SetupRouter(r, db)
 
 	err = r.Run(":8080")
 	if err != nil {
