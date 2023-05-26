@@ -1,10 +1,10 @@
 package router
 
 import (
-	"Demo/internal/author"
-	"Demo/internal/book"
-	"Demo/internal/genre"
-	"Demo/internal/library"
+	"Demo/internal/author/service"
+	"Demo/internal/book/service"
+	"Demo/internal/genre/service"
+	"Demo/internal/library/service"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -12,27 +12,27 @@ import (
 )
 
 func SetupRouter(r *gin.Engine, db *gorm.DB) {
-	r.GET("/books", book.GetBooks(db))
-	r.GET("/books/:params", book.GetBookParams(db, "params"))
-	r.POST("/books", book.CreateBooks(db))
-	r.PATCH("/books/:id", book.UpdateBooks(db))
-	r.DELETE("/books/:id", book.DeleteBook(db))
+	r.GET("/books", bookService.GetBooks(db))
+	r.GET("/books/:params", bookService.GetBookParams(db, "params"))
+	r.POST("/books", bookService.CreateBooks(db))
+	r.PATCH("/books/:id", bookService.UpdateBooks(db))
+	r.DELETE("/books/:id", bookService.DeleteBook(db))
 
-	r.POST("/author", author.CreateAuthor(db))
-	r.GET("/author", author.GetAuthor(db))
-	r.GET("/getAuthor", author.GetAuthorParams(db))
-	r.PATCH("/author/:id", author.UpdateAuthor(db))
-	r.DELETE("/author/:id", author.DeleteAuthor(db))
+	r.POST("/author", authorService.CreateAuthor(db))
+	r.GET("/author", authorService.GetAuthor(db))
+	r.GET("/getAuthor", authorService.GetAuthorParams(db))
+	r.PATCH("/author/:id", authorService.UpdateAuthor(db))
+	r.DELETE("/author/:id", authorService.DeleteAuthor(db))
 
-	r.POST("/genre", genre.CreateGenre(db))
-	r.GET("/genre/:id", genre.GetGenreById(db))
-	r.PATCH("/genre/:id", genre.UpdateGenre(db))
-	r.DELETE("genre/:id", genre.DeleteGenre(db))
+	r.POST("/genre", genreService.CreateGenre(db))
+	r.GET("/genre/:id", genreService.GetGenreById(db))
+	r.PATCH("/genre/:id", genreService.UpdateGenre(db))
+	r.DELETE("genre/:id", genreService.DeleteGenre(db))
 
-	r.POST("/library", library.StoreBook(db))
-	r.GET("/library/:id", library.GetPositionByID(db))
-	r.GET("/author/:id", library.GetBooksPositionByAuthor(db))
-	r.DELETE("library/:id", library.RemoveBook(db))
+	r.POST("/library", libraryService.StoreBook(db))
+	r.GET("/library/:id", libraryService.GetPositionByID(db))
+	r.GET("/author/:id", libraryService.GetBooksPositionByAuthor(db))
+	r.DELETE("library/:id", libraryService.RemoveBook(db))
 
 	err := r.Run(":8080")
 	if err != nil {

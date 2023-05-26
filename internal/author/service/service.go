@@ -1,6 +1,8 @@
-package author
+package authorService
 
 import (
+	author "Demo/internal/author/models"
+	"Demo/internal/book/models"
 	"net/http"
 	"strconv"
 
@@ -10,7 +12,7 @@ import (
 
 func CreateAuthor(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var author Author
+		var author author.Author
 		err := c.ShouldBindJSON(&author)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
@@ -30,7 +32,7 @@ func CreateAuthor(db *gorm.DB) gin.HandlerFunc {
 func GetAuthor(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		var authors []Author
+		var authors []author.Author
 		result := db.Find(&authors)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})
@@ -48,7 +50,7 @@ func UpdateAuthor(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var author Author
+		var author author.Author
 		result := db.First(&author, id)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
@@ -78,7 +80,7 @@ func GetAuthorParams(db *gorm.DB) gin.HandlerFunc {
 		paramType := params["paramType"][0]
 		paramValue := params["paramValue"][0]
 
-		var authors []Author
+		var authors []author.Author
 		var result *gorm.DB
 
 		switch paramType {
@@ -122,11 +124,18 @@ func DeleteAuthor(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid author ID"})
 			return
 		}
-
-		var author Author
-		result := db.Find(&author, id)
+		var booksToDelete []book.Book
+		db.Where("author_id = ?", id).Find(&booksToDelete)
+		result := db.Table("books").Where("author_id = ?", id).Delete(&book.Book{})
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete books"})
+			return
+		}
+
+		var author author.Author
+		result = db.Find(&author, id)
+		if result.Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 			return
 		}
 
@@ -136,6 +145,6 @@ func DeleteAuthor(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Author deleted"})
+		c.JSON(http.StatusOK, gin.H{"message": "author deleted"})
 	}
 }

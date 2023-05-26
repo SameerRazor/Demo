@@ -1,44 +1,45 @@
-package library
+package libraryService
 
 import (
 	"net/http"
 	"strconv"
 
-	"Demo/internal/book"
+	"Demo/internal/book/models"
+	"Demo/internal/library/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 func StoreBook(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var library Library
-		err := c.ShouldBindJSON(&library)
+		var lib library.Library
+		err := c.ShouldBindJSON(&lib)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 			return
 		}
 
-		var existingBook Library
-		result := db.Where("aisle = ? AND level = ? AND position = ?", library.Aisle, library.Level, library.Position).First(&existingBook)
+		var existingBook library.Library
+		result := db.Where("aisle = ? AND level = ? AND position = ?", lib.Aisle, lib.Level, lib.Position).First(&existingBook)
 		if result.Error == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Position already occupied"})
 			return
 		}
 
-		result = db.Create(&library)
+		result = db.Create(&lib)
 		if result.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store the book"})
 			return
 		}
 
-		c.JSON(http.StatusCreated, library)
+		c.JSON(http.StatusCreated, lib)
 	}
 }
 func GetPositionByID(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		bookID := c.Param("id")
 
-		var library Library
+		var library library.Library
 		if err := db.Where("id = ?", bookID).First(&library).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 			return
@@ -52,7 +53,7 @@ func GetPositionByID(db *gorm.DB) gin.HandlerFunc {
 
 func RemoveBook(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var library Library
+		var library library.Library
 		err := c.ShouldBindJSON(&library)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
@@ -84,28 +85,22 @@ func GetBooksPositionByAuthor(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Create a slice to store book positions
-		var bookPositions []Library
-		// c.JSON(http.StatusOK, len(book))
-
-		// Retrieve book positions from the library based on book IDs
+		var bookPositions []library.Library
 		for _, book := range book {
-			var library Library
-			result = db.Table("library").Where("id = ?", book.ID).First(&library)
+			var lib library.Library
+			result = db.Table("library").Where("id = ?", book.ID).First(&lib)
 			if result.Error != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve book position"})
 				return
 			}
 
-			// Create a book position struct
-			bookPos := Library{
+			bookPos := library.Library{
 				ID:       book.ID,
-				Aisle:    library.Aisle,
-				Level:    library.Level,
-				Position: library.Position,
+				Aisle:    lib.Aisle,
+				Level:    lib.Level,
+				Position: lib.Position,
 			}
 
-			// Append book position to the slice
 			bookPositions = append(bookPositions, bookPos)
 		}
 
