@@ -1,11 +1,14 @@
-package libraryService
+package lms
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
-	"Demo/internal/book/models"
-	"Demo/internal/library/models"
+	"Demo/internal/entities/book"
+	"Demo/internal/entities/library"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -18,6 +21,10 @@ func StoreBook(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 			return
 		}
+		if lib.Book_ID == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Book ID is required"})
+			return
+		}
 
 		var existingBook library.Library
 		result := db.Where("aisle = ? AND level = ? AND position = ?", lib.Aisle, lib.Level, lib.Position).First(&existingBook)
@@ -25,6 +32,17 @@ func StoreBook(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Position already occupied"})
 			return
 		}
+
+		now := time.Now()
+		lib.CreatedAt = fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second())
+
+		lib.UpdatedAt = lib.CreatedAt
 
 		result = db.Create(&lib)
 		if result.Error != nil {
@@ -40,14 +58,15 @@ func GetPositionByID(db *gorm.DB) gin.HandlerFunc {
 		bookID := c.Param("id")
 
 		var library library.Library
-		if err := db.Where("id = ?", bookID).First(&library).Error; err != nil {
+		if err := db.Where("id = ?", bookID).First(&library).Error; err != nil || library.IsDeleted {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 			return
 		}
-
 		position := library.Position
+		aisle := library.Aisle
+		level := library.Level
 
-		c.JSON(http.StatusOK, gin.H{"position": position})
+		c.JSON(http.StatusOK, gin.H{"aisle": aisle, "level": level, "position": position})
 	}
 }
 
@@ -60,7 +79,7 @@ func RemoveBook(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		result := db.Where("aisle = ? AND level = ? AND position = ?", library.Aisle, library.Level, library.Position).Delete(&library)
+		result := db.Table("library").Where("aisle = ? AND level = ? AND position = ?", library.Aisle, library.Level, library.Position).Update("is_deleted", true)
 		if result.RowsAffected == 0 {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found at the specified position"})
 			return
@@ -95,7 +114,7 @@ func GetBooksPositionByAuthor(db *gorm.DB) gin.HandlerFunc {
 			}
 
 			bookPos := library.Library{
-				ID:       book.ID,
+				Book_ID:       book.ID,
 				Aisle:    lib.Aisle,
 				Level:    lib.Level,
 				Position: lib.Position,
@@ -105,5 +124,45 @@ func GetBooksPositionByAuthor(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, bookPositions)
+	}
+}
+
+func UpdatePositionById(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Genre ID"})
+			return
+		}
+
+		var lib library.Library
+		result := db.First(&lib, id)
+		if result.Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found in library"})
+			return
+		}
+
+		err = c.ShouldBindJSON(&lib)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+			return
+		}
+
+		now := time.Now()
+		lib.UpdatedAt = fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second())
+
+		result = db.Save(&lib)
+		if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update the library"})
+			return
+		}
+
+		c.JSON(http.StatusOK, lib)
 	}
 }

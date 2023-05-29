@@ -1,8 +1,9 @@
-package authorService
+package lms
 
 import (
-	author "Demo/internal/author/models"
-	book "Demo/internal/book/models"
+	"Demo/internal/entities/author"
+	"Demo/internal/entities/book"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -20,16 +21,37 @@ func CreateAuthor(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		epoc, _ := strconv.Atoi(c.Param(author.DateOfBirth))
-		epochTime := epoc
-		t := time.Unix(int64(epochTime), 0)
+		parsedInteger, err := strconv.ParseInt(author.DateOfBirth, 10, 64)
+		if err != nil {
+			fmt.Println("Error parsing integer:", err)
+			return
+		}
 
-		formattedDate := t.Format("2006-01-02")
-		author.DateOfBirth = formattedDate
+		now := time.Now()
+		author.CreatedAt = fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second())
+
+		author.UpdatedAt = author.CreatedAt
+
+		epochTimeSeconds := parsedInteger
+
+		epochTime := time.Unix(epochTimeSeconds, 0)
+
+		epochDateString := epochTime.Format("2006-01-02")
+		author.DateOfBirth = epochDateString
 
 		result := db.Create(&author)
 		if result.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create a new author"})
+			return
+		}
+		if author.AuthorName == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Fill the author name"})
 			return
 		}
 
@@ -41,7 +63,7 @@ func GetAuthor(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		var authors []author.Author
-		result := db.Find(&authors)
+		result := db.Where("authors.is_deleted = ?", false).Find(&authors)
 		if result.Error != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})
 			return
@@ -83,6 +105,15 @@ func UpdateAuthor(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		now := time.Now()
+		author.UpdatedAt = fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second())
+
 		err = c.ShouldBindJSON(&author)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
@@ -101,36 +132,48 @@ func UpdateAuthor(db *gorm.DB) gin.HandlerFunc {
 
 func GetAuthorParams(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		params := c.Request.URL.Query()
-		paramType := params["paramType"][0]
-		paramValue := params["paramValue"][0]
 
 		var authors []author.Author
 		var result *gorm.DB
 
-		switch paramType {
-		case "genre":
-			genreID, err := strconv.Atoi(paramValue)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID"})
-				return
+		if paramTypes, ok := params["paramType"]; ok {
+			for _, paramType := range paramTypes {
+				paramValues := params[paramType]
+
+				switch paramType {
+				case "genre":
+					for _, paramValue := range paramValues {
+						genreID, err := strconv.Atoi(paramValue)
+						if err != nil {
+							c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID"})
+							return
+						}
+						result = db.Table("authors").
+							Joins("INNER JOIN books ON authors.id = books.author_id").
+							Joins("INNER JOIN genres ON genres.id = books.genre_id").
+							Where("genres.id = ?", genreID).
+							Find(&authors)
+					}
+
+				case "nationality":
+					for _, paramValue := range paramValues {
+						result = db.Where("nationality = ?", paramValue).Find(&authors)
+					}
+
+				case "name":
+					for _, paramValue := range paramValues {
+						result = db.Where("author_name LIKE ?", "%"+paramValue+"%").Find(&authors)
+					}
+
+				default:
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid paramType"})
+					return
+				}
 			}
 
-			result = db.Table("authors").
-				Joins("INNER JOIN books ON authors.id = books.author_id").
-				Joins("INNER JOIN genres ON genres.id = books.genre_id").
-				Where("genres.id = ?", genreID).
-				Find(&authors)
-
-		case "nationality":
-			result = db.Table("authors").Where("nationality = ?", paramValue).Find(&authors)
-
-		case "name":
-			result = db.Where("author_name LIKE ?", "%"+paramValue+"%").Find(&authors)
-
-		default:
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid paramType"})
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing paramType"})
 			return
 		}
 
@@ -152,25 +195,28 @@ func DeleteAuthor(db *gorm.DB) gin.HandlerFunc {
 		}
 		var booksToDelete []book.Book
 		db.Where("author_id = ?", id).Find(&booksToDelete)
-		result := db.Table("books").Where("author_id = ?", id).Delete(&book.Book{})
-		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete books"})
-			return
-		}
 
 		var author author.Author
-		result = db.Find(&author, id)
-		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+
+		result := db.Find(&author, id)
+		if result.Error != nil || author.IsDeleted {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Author not found"})
 			return
 		}
 
-		result = db.Delete(&author)
+		author.IsDeleted = true
+
+		result = db.Save(&author)
 		if result.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete the author"})
 			return
 		}
 
+		result = db.Table("books").Where("author_id = ?", id).Update("is_deleted", true)
+		if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete books"})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "author deleted"})
 	}
 }

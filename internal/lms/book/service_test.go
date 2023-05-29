@@ -1,9 +1,8 @@
-package main
+package lms
 
 import (
 	"Demo/config"
-	"Demo/internal/book/models"
-	"Demo/internal/book/service"
+	"Demo/internal/entities/book"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -66,7 +65,7 @@ func TestCreateBooks(t *testing.T) {
 	context, _ := gin.CreateTestContext(customResponseWriter)
 	context.Request = request
 
-	bookService.CreateBooks(db)(context)
+	CreateBooks(db)(context)
 
 	assert.Equal(t, http.StatusCreated, response.Code)
 

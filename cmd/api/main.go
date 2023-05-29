@@ -4,10 +4,10 @@ import (
 	"log"
 	"Demo/config"
 	"Demo/router"
-	"Demo/internal/book/models"
-	"Demo/internal/author/models"
-	"Demo/internal/genre/models"
-	"Demo/internal/library/models"
+	"Demo/internal/entities/book"
+	"Demo/internal/entities/author"
+	"Demo/internal/entities/genre"
+	"Demo/internal/entities/library"
 	"github.com/gin-gonic/gin"
 )
 

@@ -7,5 +7,8 @@ type Book struct {
 	AuthorId        int    `gorm:"not null" json:"author_id"`
 	GenreName       string `gorm:"not null" json:"genre_name"`
 	GenreId         int    `gorm:"not null" json:"genre_id"`
-	PublicationDate string    `gorm:"not null" json:"publication_date"`
+	PublicationDate string `gorm:"not null" json:"publication_date"`
+	CreatedAt       string `gorm:"create_time"`
+	UpdatedAt       string `gorm:"update_time"`
+	IsDeleted       bool   `json:"is_deleted"`
 }
