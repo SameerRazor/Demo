@@ -51,8 +51,11 @@ func TestCreateBooksSuccess(t *testing.T) {
 	assert.Equal(t, bookPayload.GenreName, createdBook.GenreName)
 	assert.Equal(t, "2023-02-25", createdBook.PublicationDate)
 }
-
-func TestGetBookById(t *testing.T) {
+func TestGetBookByIdCondition(t *testing.T){
+	GetBookByIdCondition(t, "/books/1")
+	GetBookByIdCondition(t, "/books/2")
+}
+func GetBookByIdCondition(t *testing.T, cond string) {
 	router := gin.Default()
 	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE books;")
@@ -71,7 +74,7 @@ func TestGetBookById(t *testing.T) {
 
 	db.Create(bookPayload)
 
-	req, _ := http.NewRequest("GET", "/books/1", nil)
+	req, _ := http.NewRequest("GET", cond, nil)
 
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
