@@ -13,10 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateAuthor(t *testing.T) {
+func TestCreateAuthorSuccess(t *testing.T) {
 	router := gin.Default()
 
-	db := config.LoadConfig()
+	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE authors;")
 
 	router.POST("/authors", CreateAuthor(db))
@@ -52,9 +52,13 @@ func TestCreateAuthor(t *testing.T) {
 	assert.Equal(t, authorPayload.Biography, createdAuthor.Biography)
 }
 
-func TestGetAuthorById(t *testing.T) {
+func TestGetAuthorCondition(t *testing.T){
+	GetAuthorByIdCondition(t, "/authors/1")
+	GetAuthorByIdCondition(t, "/authors/2")
+}
+func GetAuthorByIdCondition(t *testing.T, cond string) {
 	router := gin.Default()
-	db := config.LoadConfig()
+	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE authors;")
 	router.GET("/authors/:id", GetAuthorById(db))
 
@@ -71,7 +75,7 @@ func TestGetAuthorById(t *testing.T) {
 
 	db.Create(mockAuthor)
 
-	req, _ := http.NewRequest("GET", "/authors/1", nil)
+	req, _ := http.NewRequest("GET", cond, nil)
 
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)

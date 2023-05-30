@@ -13,10 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateBooks(t *testing.T) {
+func TestCreateBooksSuccess(t *testing.T) {
 	router := gin.Default()
 
-	db := config.LoadConfig()
+	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE books;")
 
 	router.POST("/books", CreateBooks(db))
@@ -54,7 +54,7 @@ func TestCreateBooks(t *testing.T) {
 
 func TestGetBookById(t *testing.T) {
 	router := gin.Default()
-	db := config.LoadConfig()
+	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE books;")
 	router.GET("/books/:id", GetBookById(db))
 

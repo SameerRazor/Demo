@@ -17,7 +17,7 @@ import (
 func TestStoreBook(t *testing.T) {
 	router := gin.Default()
 
-	db := config.LoadConfig()
+	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE libraries;")
 
 	router.POST("/libraries", StoreBook(db))
@@ -55,7 +55,7 @@ func TestStoreBook(t *testing.T) {
 
 func TestGetPositionByID(t *testing.T) {
 	router := gin.Default()
-	db := config.LoadConfig()
+	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE libraries;")
 	router.GET("/libraries/:id", GetPositionByID(db))
 
@@ -91,7 +91,7 @@ func TestGetPositionByID(t *testing.T) {
 
 func TestGetBooksPositionByAuthor(t *testing.T) {
 	router := gin.Default()
-	db := config.LoadConfig()
+	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE libraries;")
 	router.GET("/author/:id", GetBooksPositionByAuthor(db))
 

@@ -13,10 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateGenre(t *testing.T) {
+func TestCreateGenreSuccess(t *testing.T) {
 	router := gin.Default()
 
-	db := config.LoadConfig()
+	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE genres;")
 
 	router.POST("/genres", CreateGenre(db))
@@ -45,10 +45,13 @@ func TestCreateGenre(t *testing.T) {
 
 	assert.Equal(t, genrePayload.Genre, createdGenre.Genre)
 }
-
-func TestGenreById(t *testing.T) {
+func TestGenreCondition(t *testing.T){
+	GenreByIdCond(t, "/genres/1")
+	GenreByIdCond(t, "/genres/2")
+}
+func GenreByIdCond(t *testing.T, cond string) {
 	router := gin.Default()
-	db := config.LoadConfig()
+	db := config.LoadConfigTest()
 	db.Exec("TRUNCATE TABLE genres;")
 	router.GET("/genres/:id", GetGenreById(db))
 
@@ -59,7 +62,7 @@ func TestGenreById(t *testing.T) {
 
 	db.Create(mockGenre)
 
-	req, _ := http.NewRequest("GET", "/genres/1", nil)
+	req, _ := http.NewRequest("GET", cond, nil)
 
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
