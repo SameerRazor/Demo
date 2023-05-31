@@ -23,11 +23,14 @@ func main() {
 		return
 	}
 	db.Migrator().CreateIndex(&book.Book{}, "idx_title_author_genre_pubdate")
+	db.Migrator().CreateIndex(&book.Book{}, "idx_title")
+
 	err = db.AutoMigrate(&author.Author{})
 	if err != nil {
 		log.Fatalf("Failed to migrate the database schema: %v", err)
 		return
 	}
+	db.Migrator().CreateIndex(&author.Author{}, "idx_title_author_genre_pubdate")
 	db.Migrator().CreateIndex(&author.Author{}, "idx_authorname")
 	err = db.AutoMigrate(&genre.Genre{})
 	if err != nil {
