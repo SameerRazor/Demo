@@ -147,11 +147,11 @@ func CreateBooks(db *gorm.DB) gin.HandlerFunc {
 		epochDateString := epochTime.Format("2006-01-02")
 		boook.PublicationDate = epochDateString
 
-		result = db.Table("books").Where("title = ? AND author_name = ? AND genre_name = ? AND publication_date = ?", boook.Title, boook.AuthorName, boook.GenreName, boook.PublicationDate).First(&boook)
-		if result.Error == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Book already created"})
-			return
-		}
+		// result = db.Table("books").Where("title = ? AND author_name = ? AND genre_name = ? AND publication_date = ?", boook.Title, boook.AuthorName, boook.GenreName, boook.PublicationDate).First(&boook)
+		// if result.Error == nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Book already created"})
+		// 	return
+		// }
 
 		var genre genre.Genre
 		result = db.Table("genres").

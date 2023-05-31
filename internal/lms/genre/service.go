@@ -87,7 +87,6 @@ func GetGenresByParams(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-
 func GetGenreById(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
@@ -110,7 +109,7 @@ func CreateGenre(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var genre genre.Genre
 		err := c.ShouldBindJSON(&genre)
-		if err != nil {
+		if err != nil || genre.Genre == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 			return
 		}

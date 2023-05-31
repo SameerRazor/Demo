@@ -2,7 +2,10 @@ module Demo
 
 go 1.20
 
-require gorm.io/driver/mysql v1.5.1
+require (
+	github.com/go-playground/assert/v2 v2.2.0
+	gorm.io/driver/mysql v1.5.1
+)
 
 require (
 	github.com/bytedance/sonic v1.8.0 // indirect

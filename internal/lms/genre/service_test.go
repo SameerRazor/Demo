@@ -1,28 +1,25 @@
 package lms
 
 import (
-	"Demo/config"
 	"Demo/internal/entities/genre"
+	"Demo/internal/lms"
 	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateGenreSuccess(t *testing.T) {
-	router := gin.Default()
-
-	db := config.LoadConfigTest()
-	db.Exec("TRUNCATE TABLE genres;")
+	router, db := setup.InitializeTable()
 
 	router.POST("/genres", CreateGenre(db))
 
 	genrePayload := genre.Genre{
-		Genre : "Horror",
+		Genre: "Horror",
 	}
 
 	payloadJSON, _ := json.Marshal(genrePayload)
@@ -44,25 +41,55 @@ func TestCreateGenreSuccess(t *testing.T) {
 	}
 
 	assert.Equal(t, genrePayload.Genre, createdGenre.Genre)
-}
-func TestGenreCondition(t *testing.T){
-	GenreByIdCond(t, "/genres/1")
-	GenreByIdCond(t, "/genres/2")
-}
-func GenreByIdCond(t *testing.T, cond string) {
-	router := gin.Default()
-	db := config.LoadConfigTest()
-	db.Exec("TRUNCATE TABLE genres;")
-	router.GET("/genres/:id", GetGenreById(db))
 
-	mockGenre := &genre.Genre{
-		ID:          1,
-		Genre : "Horror",
+	setup.DeleteTables(db)
+}
+
+func TestCreateGenreFail(t *testing.T) {
+	router, db := setup.InitializeTable()
+
+	router.POST("/genres", CreateGenre(db))
+
+	genrePayload := genre.Genre{
+		Genre: "",
 	}
 
-	db.Create(mockGenre)
+	payloadJSON, _ := json.Marshal(genrePayload)
 
-	req, _ := http.NewRequest("GET", cond, nil)
+	req, _ := http.NewRequest("POST", "/genres", bytes.NewBuffer(payloadJSON))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusCreated {
+		t.Errorf("Expected status code %d but got %d", http.StatusCreated, resp.Code)
+	}
+
+	var createdGenre genre.Genre
+	err := json.Unmarshal(resp.Body.Bytes(), &createdGenre)
+	if err != nil {
+		t.Errorf("Error parsing response body: %v", err)
+	}
+
+	assert.Equal(t, genrePayload.Genre, createdGenre.Genre)
+
+	setup.DeleteTables(db)
+}
+
+func TestGenreByIdSuccess(t *testing.T) {
+	router, db := setup.InitializeTable()
+
+	router.GET("/genres/:id", GetGenreById(db))
+
+	mockGenre := genre.Genre{
+		ID:    1,
+		Genre: "Horror",
+	}
+
+	db.Create(&mockGenre)
+
+	req, _ := http.NewRequest("GET", "/genres/1", nil)
 
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
@@ -78,6 +105,39 @@ func GenreByIdCond(t *testing.T, cond string) {
 	}
 
 	fetchedGenre := fetchedGenres[0]
-	assert.Equal(t, 1, fetchedGenre.ID)
-	assert.Equal(t, mockGenre.Genre, fetchedGenre.Genre)
+	assert.Equal(t, true, reflect.DeepEqual(mockGenre, fetchedGenre))
+
+	setup.DeleteTables(db)
+}
+func TestGenreByIdFail(t *testing.T) {
+	router, db := setup.InitializeTable()
+
+	router.GET("/genres/:id", GetGenreById(db))
+
+	mockGenre := genre.Genre{
+		ID:    1,
+		Genre: "Horror",
+	}
+
+	db.Create(&mockGenre)
+
+	req, _ := http.NewRequest("GET", "/genres/2", nil)
+
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected status code %d but got %d", http.StatusOK, resp.Code)
+	}
+
+	var fetchedGenres []genre.Genre
+	err := json.Unmarshal(resp.Body.Bytes(), &fetchedGenres)
+	if err != nil {
+		t.Errorf("Error parsing response body: %v", err)
+	}
+
+	fetchedGenre := fetchedGenres[0]
+	assert.Equal(t, true, reflect.DeepEqual(mockGenre, fetchedGenre))
+
+	setup.DeleteTables(db)
 }
