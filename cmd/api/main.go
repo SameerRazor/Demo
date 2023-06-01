@@ -1,13 +1,14 @@
 package main
 
 import (
-	"log"
 	"Demo/config"
-	"Demo/router"
-	"Demo/internal/entities/book"
 	"Demo/internal/entities/author"
+	"Demo/internal/entities/book"
 	"Demo/internal/entities/genre"
 	"Demo/internal/entities/library"
+	"Demo/router"
+	"log"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,16 +22,22 @@ func main() {
 		log.Fatalf("Failed to migrate the database schema: %v", err)
 		return
 	}
+	db.Migrator().CreateIndex(&book.Book{}, "idx_title_author_genre_pubdate")
+	db.Migrator().CreateIndex(&book.Book{}, "idx_title")
+	db.Migrator().CreateIndex(&book.Book{}, "book_id")
+
 	err = db.AutoMigrate(&author.Author{})
 	if err != nil {
 		log.Fatalf("Failed to migrate the database schema: %v", err)
 		return
 	}
+	db.Migrator().CreateIndex(&author.Author{}, "idx_title_author_genre_pubdate")
+	db.Migrator().CreateIndex(&author.Author{}, "idx_authorname")
 	err = db.AutoMigrate(&genre.Genre{})
 	if err != nil {
 		log.Fatalf("Failed to migrate the database schema: %v", err)
 	}
-
+	db.Migrator().CreateIndex(&genre.Genre{}, "idx_genrename")
 	err = db.AutoMigrate(&library.Library{})
 	if err != nil {
 		log.Fatalf("Failed to migrate the database schema: %v", err)
