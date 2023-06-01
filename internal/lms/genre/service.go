@@ -3,6 +3,7 @@ package lms
 import (
 	"Demo/internal/entities/book"
 	"Demo/internal/entities/genre"
+	errorcodes "Demo/internal/error"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -15,14 +16,14 @@ import (
 func GetGenresByParams(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
-		if err != nil || page < 1 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page number"})
+		offsetStr := c.DefaultQuery("offset", "0")
+		offset, err := strconv.Atoi(offsetStr)
+		if err != nil || offset < 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidOffsetValue})
 			return
 		}
 
-		limit := 10
-		offset := (page - 1) * limit
+		limit := 3
 		params := c.Request.URL.Query()
 
 		var genres []genre.Genre
@@ -30,7 +31,7 @@ func GetGenresByParams(db *gorm.DB) gin.HandlerFunc {
 		if len(params) == 0 {
 			result = db.Where("genres.is_deleted = ?", false).Limit(limit).Offset(offset).Find(&genres)
 			if result.Error != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Genres not found"})
+				c.JSON(http.StatusNotFound, gin.H{"error": errorcodes.GenreNotFound})
 				return
 			}
 		} else {
@@ -40,7 +41,7 @@ func GetGenresByParams(db *gorm.DB) gin.HandlerFunc {
 					for _, paramValue := range j {
 						authorID, err := strconv.Atoi(paramValue)
 						if err != nil {
-							c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid author ID"})
+							c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidAuthorId})
 							return
 						}
 
@@ -66,23 +67,23 @@ func GetGenresByParams(db *gorm.DB) gin.HandlerFunc {
 				// 		Find(&genres)
 				// 	}
 				default:
-					c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid paramType"})
+					c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidParamType})
 					return
 
 				}
 
 			}
 			if result.Error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query genres"})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.GenreQueryFailure})
 				return
 			}
 		}
 
-		nextPage := page + 1
+		nextOffset := offset + limit
 
 		c.JSON(http.StatusOK, gin.H{
-			"genres":    genres,
-			"next_page": nextPage,
+			"genres":      genres,
+			"next_offset": nextOffset,
 		})
 	}
 }
@@ -91,14 +92,14 @@ func GetGenreById(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidGenreId})
 			return
 		}
 
 		var genre []genre.Genre
 		result := db.Where("genres.is_deleted = ?", false).First(&genre, id)
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Genre not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": errorcodes.GenreNotFound})
 			return
 		}
 		c.JSON(http.StatusOK, genre)
@@ -110,7 +111,7 @@ func CreateGenre(db *gorm.DB) gin.HandlerFunc {
 		var genre genre.Genre
 		err := c.ShouldBindJSON(&genre)
 		if err != nil || genre.Genre == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidRequestPayload})
 			return
 		}
 
@@ -127,7 +128,7 @@ func CreateGenre(db *gorm.DB) gin.HandlerFunc {
 
 		result := db.Create(&genre)
 		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create a new genre"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.CreateNewGenreFailure})
 			return
 		}
 
@@ -139,20 +140,20 @@ func UpdateGenre(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Genre ID"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidGenreId})
 			return
 		}
 
 		var genre genre.Genre
 		result := db.First(&genre, id)
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Genre not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": errorcodes.GenreNotFound})
 			return
 		}
 
 		err = c.ShouldBindJSON(&genre)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidRequestPayload})
 			return
 		}
 
@@ -167,7 +168,7 @@ func UpdateGenre(db *gorm.DB) gin.HandlerFunc {
 
 		result = db.Updates(&genre)
 		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update the genre"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.FailedToUpdateGenre})
 			return
 		}
 
@@ -179,14 +180,14 @@ func DeleteGenre(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidGenreId})
 			return
 		}
 
 		var genre genre.Genre
 		result := db.First(&genre, id)
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Genre not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": errorcodes.GenreNotFound})
 			return
 		}
 
@@ -195,7 +196,7 @@ func DeleteGenre(db *gorm.DB) gin.HandlerFunc {
 		var boook book.Book
 		result = db.Find(&boook, id)
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": errorcodes.BookNotFound})
 			return
 		}
 
@@ -205,14 +206,14 @@ func DeleteGenre(db *gorm.DB) gin.HandlerFunc {
 
 		result = db.Delete(&genre)
 		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete the genre"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.GenreDeletionFailure})
 			return
 		}
 
 		var books []book.Book
 		result = db.Where("genre_id = ?", id).Find(&books)
 		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to find books with the genre"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.FailedToFindBooksWithGenre})
 			return
 		}
 
@@ -220,7 +221,7 @@ func DeleteGenre(db *gorm.DB) gin.HandlerFunc {
 			books[i].GenreId = 0
 			result = db.Save(&books[i])
 			if result.Error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update book genre association"})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.FailedToRemoveGenreAssociationFromBooks})
 				return
 			}
 		}

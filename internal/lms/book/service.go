@@ -1,14 +1,14 @@
 package lms
 
 import (
+	"Demo/internal/entities/author"
+	"Demo/internal/entities/book"
+	"Demo/internal/entities/genre"
+	errorcodes "Demo/internal/error"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
-
-	"Demo/internal/entities/author"
-	"Demo/internal/entities/book"
-	"Demo/internal/entities/genre"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -18,14 +18,14 @@ func GetBookById(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Book ID"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidAuthorId})
 			return
 		}
 
 		var book []book.Book
 		result := db.First(&book, id)
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": errorcodes.BookNotFound})
 			return
 		}
 		c.JSON(http.StatusOK, book)
@@ -38,7 +38,7 @@ func GetBookParams(db *gorm.DB) gin.HandlerFunc {
 		offsetStr := c.DefaultQuery("offset", "0")
 		offset, err := strconv.Atoi(offsetStr)
 		if err != nil || offset < 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset value"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidOffsetValue})
 			return
 		}
 
@@ -51,7 +51,7 @@ func GetBookParams(db *gorm.DB) gin.HandlerFunc {
 		if len(params) == 0 {
 			result = db.Where("books.is_deleted = ?", false).Limit(limit).Offset(offset).Find(&books)
 			if result.Error != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Books not found"})
+				c.JSON(http.StatusNotFound, gin.H{"error": errorcodes.BookNotFound})
 				return
 			}
 		} else {
@@ -61,7 +61,7 @@ func GetBookParams(db *gorm.DB) gin.HandlerFunc {
 					for _, paramValue := range j {
 						genreID, err := strconv.Atoi(paramValue)
 						if err != nil {
-							c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid genre ID"})
+							c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidGenreId})
 							return
 						}
 
@@ -78,14 +78,14 @@ func GetBookParams(db *gorm.DB) gin.HandlerFunc {
 				case "offset":
 					continue
 				default:
-					c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid paramType"})
+					c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidParamType})
 					return
 
 				}
 
 			}
 			if result.Error != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query books"})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.BookQueryFailure})
 				return
 			}
 		}
@@ -105,7 +105,7 @@ func CreateBooks(db *gorm.DB) gin.HandlerFunc {
 		var boook book.Book
 		err := c.ShouldBindJSON(&boook)
 		if err != nil || boook.Title == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidRequestPayload})
 			return
 		}
 
@@ -128,7 +128,7 @@ func CreateBooks(db *gorm.DB) gin.HandlerFunc {
 			Where("author_name = ?", authorname).
 			First(&author)
 		if result.Error != nil || author.IsDeleted {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve author"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.FailedToRetrieveAuthor})
 			return
 		}
 
@@ -149,7 +149,7 @@ func CreateBooks(db *gorm.DB) gin.HandlerFunc {
 
 		result = db.Table("books").Where("title = ? AND author_name = ? AND genre_name = ? AND publication_date = ?", boook.Title, boook.AuthorName, boook.GenreName, boook.PublicationDate).First(&boook)
 		if result.Error == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Book already created"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.BookAlreadyCreated})
 			return
 		}
 
@@ -158,7 +158,7 @@ func CreateBooks(db *gorm.DB) gin.HandlerFunc {
 			Where("genre = ?", genrename).
 			First(&genre)
 		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve genre"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.FailedToRetrieveGenre})
 			return
 		}
 
@@ -166,7 +166,7 @@ func CreateBooks(db *gorm.DB) gin.HandlerFunc {
 
 		result = db.Create(&boook)
 		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create a new book"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.CreateNewBookFailure})
 			return
 		}
 
@@ -178,20 +178,20 @@ func UpdateBooks(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidBookId})
 			return
 		}
 
 		var book book.Book
 		result := db.First(&book, id)
 		if result.Error != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": errorcodes.BookNotFound})
 			return
 		}
 
 		err = c.ShouldBindJSON(&book)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidRequestPayload})
 			return
 		}
 
@@ -206,7 +206,7 @@ func UpdateBooks(db *gorm.DB) gin.HandlerFunc {
 
 		result = db.Save(&book)
 		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update the book"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.FailedToUpdateBook})
 			return
 		}
 
@@ -218,21 +218,21 @@ func DeleteBook(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book ID"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": errorcodes.InvalidBookId})
 			return
 		}
 
 		var book book.Book
 		result := db.First(&book, id)
 		if result.Error != nil || book.IsDeleted {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": errorcodes.BookNotFound})
 			return
 		}
 
 		book.IsDeleted = true
 		result = db.Save(&book)
 		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete the book"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errorcodes.BookDeletionFailure})
 			return
 		}
 
