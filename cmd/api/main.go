@@ -24,6 +24,7 @@ func main() {
 	}
 	db.Migrator().CreateIndex(&book.Book{}, "idx_title_author_genre_pubdate")
 	db.Migrator().CreateIndex(&book.Book{}, "idx_title")
+	db.Migrator().CreateIndex(&book.Book{}, "book_id")
 
 	err = db.AutoMigrate(&author.Author{})
 	if err != nil {
