@@ -142,7 +142,7 @@ func TestGetPositionByIDSuccess(t *testing.T) {
 
 	setup.DeleteTables(db)
 }
-func TestGetPositionByIDFail(t *testing.T) {
+func TestGetPositionByIDNotFound(t *testing.T) {
 	router, db := setup.InitializeTable()
 	router.GET("/libraries/:id", GetPositionByID(db))
 

@@ -109,7 +109,7 @@ func TestGenreByIdSuccess(t *testing.T) {
 
 	setup.DeleteTables(db)
 }
-func TestGenreByIdFail(t *testing.T) {
+func TestGenreByIdNotFound(t *testing.T) {
 	router, db := setup.InitializeTable()
 
 	router.GET("/genres/:id", GetGenreById(db))

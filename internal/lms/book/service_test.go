@@ -168,7 +168,7 @@ func TestGetBookByIdSuccess(t *testing.T) {
 	assert.Equal(t, true, reflect.DeepEqual(bookPayload, fetchedBook))
 	setup.DeleteTables(db)
 }
-func TestGetBookByIdFail(t *testing.T) {
+func TestGetBookByIdNotFound(t *testing.T) {
 	router, db := setup.InitializeTable()
 	router.GET("/books/:id", GetBookById(db))
 

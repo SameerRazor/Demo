@@ -126,7 +126,7 @@ func TestGetAuthorByIdSuccess(t *testing.T) {
 
 	setup.DeleteTables(db)
 }
-func TestGetAuthorByIdFail(t *testing.T) {
+func TestGetAuthorByIdNotFound(t *testing.T) {
 	router, db := setup.InitializeTable()
 
 	router.GET("/authors/:id", GetAuthorById(db))
